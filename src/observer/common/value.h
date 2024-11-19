@@ -100,6 +100,7 @@ public:
   string get_string() const;
   bool   get_boolean() const;
 
+
 private:
   void set_int(int val);
   void set_float(float val);

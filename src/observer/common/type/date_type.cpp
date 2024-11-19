@@ -1,12 +1,9 @@
-
 #include <iomanip>
-
 #include "common/lang/comparator.h"
 #include "common/lang/sstream.h"
 #include "common/log/log.h"
 #include "common/type/date_type.h"
 #include "common/value.h"
-
 int DateType::compare(const Value &left, const Value &right) const
 {
     return common::compare_int((void *)&left.value_.int_value_, (void *)&right.value_.int_value_);
