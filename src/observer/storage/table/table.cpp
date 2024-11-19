@@ -1,16 +1,3 @@
-/* Copyright (c) 2021 Xie Meiyi(xiemeiyi@hust.edu.cn) and OceanBase and/or its affiliates. All rights reserved.
-miniob is licensed under Mulan PSL v2.
-You can use this software according to the terms and conditions of the Mulan PSL v2.
-You may obtain a copy of Mulan PSL v2 at:
-         http://license.coscl.org.cn/MulanPSL2
-THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
-See the Mulan PSL v2 for more details. */
-
-//
-// Created by Meiyi & Wangyunlai on 2021/5/13.
-//
 
 #include <limits.h>
 #include <string.h>
@@ -30,7 +17,7 @@ See the Mulan PSL v2 for more details. */
 #include "storage/record/record_manager.h"
 #include "storage/table/table.h"
 #include "storage/trx/trx.h"
-
+#include "storage/common/meta_util.h"
 Table::~Table()
 {
   if (record_handler_ != nullptr) {
@@ -125,6 +112,32 @@ RC Table::create(Db *db, int32_t table_id, const char *path, const char *name, c
 
   LOG_INFO("Successfully create table %s:%s", base_dir, name);
   return rc;
+}
+
+RC Table::drop(){
+  delete record_handler_;
+  record_handler_ = nullptr;
+
+  string meta_file_path = table_meta_file(base_dir_.c_str(), name());
+  string data_file_path = table_data_file(base_dir_.c_str(), name());
+
+  if (data_buffer_pool_ != nullptr) {
+    data_buffer_pool_->close_file();
+    data_buffer_pool_ = nullptr;
+  }
+
+  ::remove(meta_file_path.c_str());
+  ::remove(data_file_path.c_str());
+
+  
+  for(int i = 0;i<table_meta_.index_num();i++){
+    const IndexMeta *idx = table_meta_.index(i);
+    string index_file_path = table_index_file(base_dir_.c_str(), name(), idx->name());
+    delete idx;
+    ::remove(index_file_path.c_str());
+  }
+  indexes_.clear();
+  return RC::SUCCESS;
 }
 
 RC Table::open(Db *db, const char *meta_file, const char *base_dir)
@@ -538,5 +551,41 @@ RC Table::sync()
 
   rc = data_buffer_pool_->flush_all_pages();
   LOG_INFO("Sync table over. table=%s", name());
+  return rc;
+}
+
+RC Table::update_record(Record &record,const char *field_name,Value &value)
+{
+  RC rc = RC::SUCCESS;
+  for(Index *index:indexes_)
+  {
+    rc = index->delete_entry(record.data(),&record.rid());
+    ASSERT(RC::SUCCESS == rc,
+           "failed to delete entry from index. table name=%s, index name=%s, rid=%s, rc=%s",
+           name(),index->index_meta().name(),record.rid().to_string().c_str(),strrc(rc));
+  }  
+  const FieldMeta *field = table_meta_.field(field_name);
+  rc = set_value_to_record(record.data(),value,field);
+
+  rc = record_handler_->update_record(record.rid(),record.data());
+  for(Index *index:indexes_)
+  {
+    rc = index->insert_entry(record.data(),&record.rid());
+    if(rc != RC::SUCCESS)
+    {
+      RC rc2 = delete_entry_of_indexes(record.data(),record.rid(),false);
+      if(rc2 != RC::SUCCESS)
+      {
+        LOG_ERROR("Failed to rollback index data when insert index entries failed. table name=%s, rc=%d:%s",
+                  name(),rc2,strrc(rc2));
+      }
+      rc2 = record_handler_->delete_record(&record.rid());
+      if(rc2 != RC::SUCCESS)
+      {
+        LOG_PANIC("Failed to rollback record data when insert index entries failed. table name=%s, rc=%d:%s",
+                  name(),rc2,strrc(rc2));
+      }
+    }
+  }
   return rc;
 }

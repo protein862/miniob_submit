@@ -11,7 +11,6 @@ See the Mulan PSL v2 for more details. */
 //
 // Created by Meiyi & Longda & Wangyunlai on 2021/5/12.
 //
-
 #pragma once
 
 #include "common/rc.h"
@@ -65,6 +64,12 @@ public:
    */
   RC create_table(const char *table_name, span<const AttrInfoSqlNode> attributes,
       const StorageFormat storage_format = StorageFormat::ROW_FORMAT);
+
+  /**
+   * @brief 销毁一个表
+   * @param table_name 表名
+   */
+  RC drop_table(const char *table_name);
 
   /**
    * @brief 根据表名查找表

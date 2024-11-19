@@ -47,6 +47,8 @@ public:
   RC insert_record(Table *table, Record &record) override;
   RC delete_record(Table *table, Record &record) override;
   RC visit_record(Table *table, Record &record, ReadWriteMode mode) override;
+  RC update_record(Table *table, Record &record,const char *field_name,Value &value)
+  {return table->update_record(record,field_name,value);}
   RC start_if_need() override;
   RC commit() override;
   RC rollback() override;

@@ -1,17 +1,3 @@
-/* Copyright (c) 2021 OceanBase and/or its affiliates. All rights reserved.
-miniob is licensed under Mulan PSL v2.
-You can use this software according to the terms and conditions of the Mulan PSL v2.
-You may obtain a copy of Mulan PSL v2 at:
-         http://license.coscl.org.cn/MulanPSL2
-THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
-See the Mulan PSL v2 for more details. */
-
-//
-// Created by Wangyunlai 2023/6/27
-//
-
 #pragma once
 
 #include "common/lang/string.h"
@@ -34,7 +20,7 @@ public:
   friend class FloatType;
   friend class BooleanType;
   friend class CharType;
-  friend class VectorType;
+  friend class DateType;
 
   Value() = default;
 
@@ -90,6 +76,10 @@ public:
   void set_data(const char *data, int length) { this->set_data(const_cast<char *>(data), length); }
   void set_value(const Value &value);
   void set_boolean(bool val);
+  void set_date(int y,int m,int d){
+    value_.int_value_ = y * 10000 + m * 100 + d;
+    attr_type_ = AttrType::DATES;
+  };
 
   string to_string() const;
 

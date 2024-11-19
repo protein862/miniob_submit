@@ -1,17 +1,3 @@
-/* Copyright (c) 2021 Xie Meiyi(xiemeiyi@hust.edu.cn) and OceanBase and/or its affiliates. All rights reserved.
-miniob is licensed under Mulan PSL v2.
-You can use this software according to the terms and conditions of the Mulan PSL v2.
-You may obtain a copy of Mulan PSL v2 at:
-         http://license.coscl.org.cn/MulanPSL2
-THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
-See the Mulan PSL v2 for more details. */
-
-//
-// Created by Meiyi & Longda & Wangyunlai on 2021/5/12.
-//
-
 #include "storage/db/db.h"
 
 #include <fcntl.h>
@@ -158,6 +144,28 @@ RC Db::create_table(const char *table_name, span<const AttrInfoSqlNode> attribut
 
   opened_tables_[table_name] = table;
   LOG_INFO("Create table success. table name=%s, table_id:%d", table_name, table_id);
+  return RC::SUCCESS;
+}
+
+RC Db::drop_table(const char *table_name)
+{
+  RC rc = RC::SUCCESS;
+  // check table_name
+  if (opened_tables_.count(table_name) == 0) {
+    LOG_WARN("%s has not been opened before.", table_name);
+    return RC::SCHEMA_TABLE_NOT_EXIST;
+  }
+  
+  auto it = opened_tables_.find(table_name);
+  Table *table = it->second;
+  opened_tables_.erase(it);
+
+  rc = table->drop();
+  if(rc != RC::SUCCESS){
+    LOG_ERROR("Failed to drop table %s.", table_name);
+    return rc;
+  }
+  
   return RC::SUCCESS;
 }
 

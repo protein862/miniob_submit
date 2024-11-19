@@ -15,7 +15,8 @@ See the Mulan PSL v2 for more details. */
 #include "sql/expr/expression.h"
 #include "sql/expr/tuple.h"
 #include "sql/expr/arithmetic_operator.hpp"
-
+#include <cstring>
+#include <regex>
 using namespace std;
 
 RC FieldExpr::get_value(const Tuple &tuple, Value &value) const
@@ -117,6 +118,26 @@ ComparisonExpr::ComparisonExpr(CompOp comp, unique_ptr<Expression> left, unique_
 {}
 
 ComparisonExpr::~ComparisonExpr() {}
+static void replace_all(std::string &left,const std::string &from,const std::string &to)
+{
+  if(from.empty()){
+    return ;
+  }
+  size_t pos =0;
+  while(std::string::npos !=(pos = left.find(from,pos))){
+  left.replace(pos,from.length(),to);
+   pos += to.length();
+  }
+}
+static bool str_like(const Value &left, const Value &right)
+{
+  std::string raw_reg(right.data());
+  replace_all(raw_reg,"_","[^']");
+  replace_all(raw_reg,"%","[^']*");
+  std::regex reg(raw_reg.c_str(),std::regex_constants::ECMAScript | std::regex_constants::icase);
+  bool res = std::regex_match(left.data(),reg);
+  return res;
+  }
 
 RC ComparisonExpr::compare_value(const Value &left, const Value &right, bool &result) const
 {
@@ -124,6 +145,12 @@ RC ComparisonExpr::compare_value(const Value &left, const Value &right, bool &re
   int cmp_result = left.compare(right);
   result         = false;
   switch (comp_) {
+    case LIKE_OP: {
+      result = str_like(left,right);
+    } break;
+    case NOT_LIKE_OP: {
+      result = !str_like(left,right);
+    } break;
     case EQUAL_TO: {
       result = (0 == cmp_result);
     } break;

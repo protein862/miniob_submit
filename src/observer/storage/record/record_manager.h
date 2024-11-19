@@ -401,6 +401,7 @@ public:
 
   RC visit_record(const RID &rid, function<bool(Record &)> updater);
 
+  RC update_record(const RID &rid,const char *data);
 private:
   /**
    * @brief 初始化当前没有填满记录的页面，初始化free_pages_成员

@@ -1,17 +1,3 @@
-/* Copyright (c) 2021 Xie Meiyi(xiemeiyi@hust.edu.cn) and OceanBase and/or its affiliates. All rights reserved.
-miniob is licensed under Mulan PSL v2.
-You can use this software according to the terms and conditions of the Mulan PSL v2.
-You may obtain a copy of Mulan PSL v2 at:
-         http://license.coscl.org.cn/MulanPSL2
-THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
-See the Mulan PSL v2 for more details. */
-
-//
-// Created by Meiyi & Wangyunlai on 2021/5/12.
-//
-
 #pragma once
 
 #include "storage/table/table_meta.h"
@@ -53,7 +39,7 @@ public:
    */
   RC create(Db *db, int32_t table_id, const char *path, const char *name, const char *base_dir,
       span<const AttrInfoSqlNode> attributes, StorageFormat storage_format);
-
+  RC drop();
   /**
    * 打开一个表
    * @param meta_file 保存表元数据的文件完整路径
@@ -79,7 +65,7 @@ public:
   RC delete_record(const Record &record);
   RC delete_record(const RID &rid);
   RC get_record(const RID &rid, Record &record);
-
+  RC update_record(Record &record,const char *field_name,Value &value);
   RC recover_insert_record(Record &record);
 
   // TODO refactor
